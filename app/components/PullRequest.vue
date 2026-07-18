@@ -16,10 +16,17 @@ const stateIcons: Record<PullRequest['state'], string> = {
   merged: 'i-lucide-git-merge',
   closed: 'i-lucide-git-pull-request-closed',
 }
+
+const stateLabels: Record<PullRequest['state'], string> = {
+  open: 'in-flight',
+  draft: 'queued',
+  merged: 'completed',
+  closed: 'closed',
+}
 </script>
 
 <template>
-  <div class="flex items-center gap-2 sm:gap-4">
+  <div class="flex items-center gap-2 sm:gap-4 transition-transform duration-150 hover:translate-x-0.5">
     <a
       :href="`https://github.com/${data.repo}`"
       target="_blank"
@@ -31,13 +38,14 @@ const stateIcons: Record<PullRequest['state'], string> = {
 
     <div class="flex-1 flex justify-between gap-2 lg:gap-4 min-w-0">
       <div class="flex flex-col min-w-0 gap-0.5 sm:gap-1">
-        <a :href="data.url" target="_blank" class="text-sm sm:text-base flex items-center gap-0.5 sm:gap-1 hover:underline text-neutral-900 dark:text-white">
+        <a :href="data.url" target="_blank" class="text-sm sm:text-base flex items-center gap-0.5 sm:gap-1 hover:underline decoration-nvidia dark:decoration-nvidia-bright text-neutral-900 dark:text-white">
           <UIcon
             :name="stateIcons[data.state]"
+            :title="stateLabels[data.state]"
             :class="{
-              'text-green-500 dark:text-green-400': data.state === 'open',
+              'text-amber-600 dark:text-amber-400': data.state === 'open',
               'text-neutral-500 dark:text-neutral-400': data.state === 'draft',
-              'text-purple-500 dark:text-purple-400': data.state === 'merged',
+              'text-nvidia dark:text-nvidia-bright': data.state === 'merged',
               'text-red-500 dark:text-red-400': data.state === 'closed',
             }"
             class="size-4 sm:size-5 shrink-0"
@@ -46,8 +54,8 @@ const stateIcons: Record<PullRequest['state'], string> = {
           <span class="truncate">{{ data.title }}</span>
         </a>
 
-        <div class="flex gap-2 items-bottom">
-          <a :href="`https://github.com/${data.repo}`" target="_blank" class="text-sm sm:text-base inline-flex gap-1 hover:text-black dark:hover:text-white truncate">
+        <div class="flex gap-2 items-bottom font-mono">
+          <a :href="`https://github.com/${data.repo}`" target="_blank" class="text-xs sm:text-sm inline-flex gap-1 hover:text-black dark:hover:text-white truncate">
             <span class="opacity-75">{{ data.repo.split('/')[0] }}</span>
             <span class="opacity-50">/</span>
             <span class="truncate">{{ data.repo.split('/')[1] }}</span>
@@ -59,12 +67,12 @@ const stateIcons: Record<PullRequest['state'], string> = {
         </div>
       </div>
 
-      <div class="flex flex-col justify-between shrink-0 text-right">
-        <a :href="data.url" target="_blank" class="hover:underline text-xs sm:text-sm">
+      <div class="flex flex-col justify-between shrink-0 text-right font-mono">
+        <a :href="data.url" target="_blank" class="hover:underline text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
           #{{ data.number }}
         </a>
 
-        <time :datatime="data.created_at" class="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(data.created_at)) }}</time>
+        <time :datatime="data.created_at" class="text-xs text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(data.created_at)) }}</time>
       </div>
     </div>
   </div>

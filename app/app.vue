@@ -39,6 +39,6 @@ useHead({
 
 <style lang="postcss">
 body {
-  @apply min-h-screen bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-sans;
+  @apply min-h-screen bg-white dark:bg-[#0a0a0a] text-neutral-700 dark:text-neutral-200 font-sans;
 }
 </style>

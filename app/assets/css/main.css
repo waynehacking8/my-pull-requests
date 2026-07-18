@@ -1,2 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+@theme {
+  --font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-nvidia: #76b900;
+  --color-nvidia-bright: #8ed600;
+}
+
+:root {
+  --ui-primary: #76b900;
+}
+
+.dark {
+  --ui-primary: #8ed600;
+}
+
+::selection {
+  background-color: #76b900;
+  color: #0a0a0a;
+}

@@ -27,6 +27,13 @@ useSeoMeta({
   twitterImage: `${url.origin}/og.png`,
 })
 
+const stats = computed(() => ({
+  total: prs.length,
+  completed: prs.filter(pr => pr.state === 'merged').length,
+  inFlight: prs.filter(pr => pr.state === 'open').length,
+  queued: prs.filter(pr => pr.state === 'draft').length,
+}))
+
 const order = ref<'asc' | 'desc'>('desc')
 const orderKey = ref<'date' | 'star'>('date')
 
@@ -138,7 +145,28 @@ const orderedPrs = computed(() => {
           variant="link"
         />
       </div>
-      <USeparator class="mt-2 sm:mt-6 mb-6 sm:mb-10 w-1/2 mx-auto animate-pulse" />
+      <div class="mt-3 w-full max-w-md rounded-md border border-neutral-200 dark:border-neutral-800 font-mono text-[11px] sm:text-xs">
+        <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3 py-1.5 uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+          <span>kernel queue</span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="relative flex size-1.5">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-nvidia opacity-60" />
+              <span class="relative inline-flex size-1.5 rounded-full bg-nvidia" />
+            </span>
+            live
+          </span>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+          <span>prs <span class="font-semibold text-neutral-900 dark:text-white">{{ stats.total }}</span></span>
+          <span>completed <span class="font-semibold text-nvidia dark:text-nvidia-bright">{{ stats.completed }}</span></span>
+          <span>in-flight <span class="font-semibold text-amber-600 dark:text-amber-400">{{ stats.inFlight }}</span></span>
+          <span v-if="stats.queued">queued <span class="font-semibold text-neutral-700 dark:text-neutral-300">{{ stats.queued }}</span></span>
+        </div>
+        <div class="border-t border-neutral-200 dark:border-neutral-800 px-3 py-1.5 text-neutral-400 dark:text-neutral-500">
+          <span class="select-none">// </span>making every FLOP count
+        </div>
+      </div>
+      <div class="mb-6 sm:mb-10" />
     </div>
 
     <div class="relative">
