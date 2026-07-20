@@ -53,10 +53,10 @@ useHead({
 })
 const url = useRequestURL()
 useSeoMeta({
-  title: `${user.value.name} is Contributing`,
-  description: `Making every FLOP count — ${user.value.name}'s recent pull requests on GitHub.`,
-  ogTitle: `${user.value.name} is Contributing`,
-  ogDescription: `Making every FLOP count — ${user.value.name}'s recent pull requests on GitHub.`,
+  title: `${user.value.name} ships upstream`,
+  description: `${user.value.name}'s open-source GPU kernel, LLM serving, and correctness work across the inference stack.`,
+  ogTitle: `${user.value.name} ships upstream`,
+  ogDescription: 'GPU kernels, LLM serving, and correctness fixes across the open-source inference stack.',
   twitterCard: 'summary_large_image',
   ogImage: `${url.origin}/og.png`,
   twitterImage: `${url.origin}/og.png`,
@@ -126,27 +126,47 @@ const orderedPrs = computed(() => {
   })
   return sortedPrs
 })
+
+const query = ref('')
+const stateFilter = ref<'all' | PullRequest['state']>('all')
+const stateOptions = computed(() => [
+  { value: 'all' as const, label: 'All', count: prs.value.length },
+  { value: 'merged' as const, label: 'Merged', count: stats.value.completed },
+  { value: 'open' as const, label: 'Open', count: stats.value.inFlight },
+  { value: 'draft' as const, label: 'Draft', count: stats.value.queued },
+  { value: 'closed' as const, label: 'Closed', count: prs.value.filter(pr => pr.state === 'closed').length },
+].filter(option => option.value === 'all' || option.count > 0))
+
+const filteredPrs = computed(() => {
+  const needle = query.value.trim().toLocaleLowerCase()
+  return orderedPrs.value.filter((pr) => {
+    const matchesState = stateFilter.value === 'all' || pr.state === stateFilter.value
+    const matchesQuery = !needle || `${pr.title} ${pr.repo} #${pr.number}`.toLocaleLowerCase().includes(needle)
+    return matchesState && matchesQuery
+  })
+})
 </script>
 
 <template>
-  <UContainer class="p-4 sm:p-6 lg:p-8 lg:pt-10 max-w-3xl">
-    <div class="flex flex-col items-center gap-2">
+  <UContainer class="px-4 py-6 sm:px-6 sm:py-10 lg:px-8 max-w-4xl">
+    <header class="hero-panel flex flex-col items-center gap-2 px-5 py-7 sm:px-8 sm:py-9">
+      <p class="eyebrow">
+        Open-source activity
+      </p>
       <a :href="userUrl" target="_blank"><UAvatar
         :src="user.avatar"
         :alt="user.name"
         size="xl"
       />
       </a>
-      <h1 class="text-2xl sm:text-3xl text-center">
+      <h1 class="text-2xl sm:text-4xl text-center font-semibold tracking-tight text-neutral-950 dark:text-white">
         <a :href="userUrl" target="_blank">
           {{ user.name }}
         </a>
-        is <span class="animate-pulse">Contributing...</span>
+        <span class="text-primary"> ships upstream.</span>
       </h1>
-      <p class="text-center text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300">
-        <NuxtLink :to="userUrl" target="_blank">
-          @{{ user.username }}'s recent pull requests on GitHub.
-        </NuxtLink>
+      <p class="max-w-xl text-center text-sm sm:text-base text-neutral-600 dark:text-neutral-300">
+        GPU kernels, LLM serving, and correctness fixes across the open-source inference stack.
       </p>
       <div class="flex items-center justify-center gap-1 text-neutral-700 dark:text-neutral-300">
         <ClientOnly>
@@ -176,6 +196,22 @@ const orderedPrs = computed(() => {
           target="_blank"
           aria-label="RSS Feed"
           icon="i-lucide-rss"
+          color="neutral"
+          variant="link"
+        />
+        <UButton
+          to="https://wayne.is-a.dev/"
+          external
+          aria-label="Open Wayne's portfolio"
+          icon="i-lucide-panels-top-left"
+          color="neutral"
+          variant="link"
+        />
+        <UButton
+          to="https://wayne.is-a.dev/cv.pdf"
+          external
+          aria-label="Open Wayne's CV"
+          icon="i-lucide-file-user"
           color="neutral"
           variant="link"
         />
@@ -223,11 +259,41 @@ const orderedPrs = computed(() => {
           <div class="h-4" />
         </template>
       </ClientOnly>
-      <div class="mb-6 sm:mb-10" />
-    </div>
+    </header>
 
-    <div class="relative">
-      <div class="flex justify-end absolute -top-10 lg:-top-12 right-0">
+    <main class="mt-6 sm:mt-8">
+      <section class="toolbar" aria-label="Pull request filters">
+        <label class="search-field">
+          <UIcon name="i-lucide-search" class="size-4 shrink-0" aria-hidden="true" />
+          <span class="sr-only">Search pull requests</span>
+          <input
+            v-model="query"
+            type="search"
+            placeholder="Search title, repository, or PR number"
+            autocomplete="off"
+          >
+          <button
+            v-if="query"
+            type="button"
+            class="clear-search"
+            aria-label="Clear search"
+            @click="query = ''"
+          >
+            <UIcon name="i-lucide-x" class="size-4" />
+          </button>
+        </label>
+        <div class="state-filters" aria-label="Filter by pull request state">
+          <button
+            v-for="option of stateOptions"
+            :key="option.value"
+            type="button"
+            :class="{ active: stateFilter === option.value }"
+            :aria-pressed="stateFilter === option.value"
+            @click="stateFilter = option.value"
+          >
+            {{ option.label }} <span>{{ option.count }}</span>
+          </button>
+        </div>
         <UDropdownMenu
           :items="items"
           :content="{
@@ -248,10 +314,22 @@ const orderedPrs = computed(() => {
             size="xs"
           />
         </UDropdownMenu>
+      </section>
+
+      <p class="results-summary" aria-live="polite">
+        Showing {{ filteredPrs.length }} of {{ prs.length }} pull requests
+      </p>
+
+      <div v-if="filteredPrs.length" class="flex flex-col gap-3 sm:gap-4">
+        <PullRequest v-for="pr of filteredPrs" :key="pr.url" :data="pr" />
       </div>
-      <div class="flex flex-col gap-6 mt-5 sm:gap-10">
-        <PullRequest v-for="pr of orderedPrs" :key="pr.url" :data="pr" />
+      <div v-else class="empty-state">
+        <UIcon name="i-lucide-search-x" class="size-7" />
+        <p>No pull requests match this view.</p>
+        <button type="button" @click="query = ''; stateFilter = 'all'">
+          Reset filters
+        </button>
       </div>
-    </div>
+    </main>
   </UContainer>
 </template>
