@@ -77,3 +77,16 @@ This project is inspired by [Anthony Fu](https://github.com/antfu)'s [releases.a
 ## License
 
 [MIT](./LICENSE)
+
+## Fork notes
+
+This fork is deployed at https://prs.wayne.is-a.dev and diverges from upstream in two ways.
+
+**Freshness.** `/` and `/api/contributions` use `isr: 60` instead of five minutes, `/api/contributions`
+returns a `generatedAt` timestamp, and the page revalidates when the tab regains focus plus once a
+minute while it stays open. The header shows a measured "updated <time ago>" rather than a static
+"live" indicator, because the payload is cached and is never actually live.
+
+**Header.** Contribution counts render as an inline mono row that reuses the same type scale, muted
+color and state icons as the pull request list, so the header reads as part of the page instead of a
+separate panel.
