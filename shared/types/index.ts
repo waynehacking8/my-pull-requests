@@ -18,4 +18,6 @@ export type PullRequest = {
 export type Contributions = {
   user: User
   prs: PullRequest[]
+  // When this payload was built on the server, so the page can show real data freshness
+  generatedAt: string
 }

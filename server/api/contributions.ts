@@ -52,5 +52,6 @@ export default defineEventHandler(async () => {
   return {
     user,
     prs,
+    generatedAt: new Date().toISOString(),
   } as Contributions
 })

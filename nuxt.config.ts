@@ -6,8 +6,12 @@ export default defineNuxtConfig({
 
   $production: {
     routeRules: {
-      '/': { isr: 60 * 5 },
-      '/api/contributions': { isr: 60 * 5 },
+      // 60s keeps the page close to real-time while staying far inside GitHub's
+      // rate limits: one regeneration costs ~13 API calls (search + user + repos).
+      // The client also revalidates on tab focus, so returning to the page is instant.
+      '/': { isr: 60 },
+      '/api/contributions': { isr: 60 },
+      // Feed readers poll on their own schedule, no need to regenerate as often.
       '/feed.xml': { isr: 60 * 5 },
     },
   },

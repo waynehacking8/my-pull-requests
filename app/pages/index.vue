@@ -1,37 +1,72 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
-const { data: contributions } = await useFetch <Contributions> ('/api/contributions')
+const { data: contributions, refresh } = await useFetch <Contributions> ('/api/contributions')
 
 if (!contributions.value) {
   throw createError('Could not load User activity')
 }
 
-const { user, prs } = contributions.value
-const userUrl = `https://github.com/${user.username}`
+// Kept as computed rather than destructured so the page re-renders after a revalidation.
+const user = computed(() => contributions.value!.user)
+const prs = computed(() => contributions.value!.prs)
+const userUrl = computed(() => `https://github.com/${user.value.username}`)
+
+// The payload is ISR-cached, so freshness has to be measured from the server
+// timestamp instead of asserted with a permanently "live" indicator.
+const generatedAt = computed(() => new Date(contributions.value!.generatedAt))
+const updatedAgo = useTimeAgo(generatedAt)
+const now = useTimestamp({ interval: 10_000 })
+const isFresh = computed(() => now.value - generatedAt.value.getTime() < 2 * 60_000)
+
+let revalidating = false
+async function revalidate() {
+  if (revalidating) return
+  revalidating = true
+  try {
+    await refresh()
+  }
+  finally {
+    revalidating = false
+  }
+}
+
+if (import.meta.client) {
+  const visibility = useDocumentVisibility()
+
+  // Coming back to the tab should show current data, not whatever was cached on load.
+  watch(visibility, (state, previous) => {
+    if (state === 'visible' && previous === 'hidden') revalidate()
+  })
+
+  // Poll on the same cadence as the ISR window, but only while the tab is open.
+  useIntervalFn(() => {
+    if (visibility.value === 'visible') revalidate()
+  }, 60_000)
+}
 
 useHead({
   link: [
     { rel: 'icon', href: '/favicon.png' },
     { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-    { rel: 'alternate', type: 'application/rss+xml', title: `${user.name}'s recent pull requests`, href: '/feed.xml' },
+    { rel: 'alternate', type: 'application/rss+xml', title: `${user.value.name}'s recent pull requests`, href: '/feed.xml' },
   ],
 })
 const url = useRequestURL()
 useSeoMeta({
-  title: `${user.name} is Contributing`,
-  description: `Discover ${user.name} recent pull requests on GitHub.`,
-  ogTitle: `${user.name} is Contributing`,
-  ogDescription: `Discover ${user.name} recent pull requests on GitHub.`,
+  title: `${user.value.name} is Contributing`,
+  description: `Making every FLOP count — ${user.value.name}'s recent pull requests on GitHub.`,
+  ogTitle: `${user.value.name} is Contributing`,
+  ogDescription: `Making every FLOP count — ${user.value.name}'s recent pull requests on GitHub.`,
   twitterCard: 'summary_large_image',
   ogImage: `${url.origin}/og.png`,
   twitterImage: `${url.origin}/og.png`,
 })
 
 const stats = computed(() => ({
-  total: prs.length,
-  completed: prs.filter(pr => pr.state === 'merged').length,
-  inFlight: prs.filter(pr => pr.state === 'open').length,
-  queued: prs.filter(pr => pr.state === 'draft').length,
+  total: prs.value.length,
+  completed: prs.value.filter(pr => pr.state === 'merged').length,
+  inFlight: prs.value.filter(pr => pr.state === 'open').length,
+  queued: prs.value.filter(pr => pr.state === 'draft').length,
 }))
 
 const order = ref<'asc' | 'desc'>('desc')
@@ -78,7 +113,7 @@ const items = computed(() => [
 ])
 
 const orderedPrs = computed(() => {
-  const sortedPrs = [...prs]
+  const sortedPrs = [...prs.value]
   sortedPrs.sort((a, b) => {
     if (orderKey.value === 'star') {
       return order.value === 'asc' ? a.stars - b.stars : b.stars - a.stars
@@ -145,27 +180,49 @@ const orderedPrs = computed(() => {
           variant="link"
         />
       </div>
-      <div class="mt-3 w-full max-w-md rounded-md border border-neutral-200 dark:border-neutral-800 font-mono text-[11px] sm:text-xs">
-        <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-3 py-1.5 uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
-          <span>kernel queue</span>
-          <span class="inline-flex items-center gap-1.5">
-            <span class="relative flex size-1.5">
-              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-nvidia opacity-60" />
-              <span class="relative inline-flex size-1.5 rounded-full bg-nvidia" />
-            </span>
-            live
+      <!-- Same mono/neutral metadata treatment as the PR rows below, so it reads as one page. -->
+      <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-mono text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
+        <span>{{ stats.total }} prs</span>
+        <span class="opacity-40" aria-hidden="true">·</span>
+        <span class="inline-flex items-center gap-1">
+          <UIcon name="i-lucide-git-merge" class="size-3.5 shrink-0 text-nvidia dark:text-nvidia-bright" />
+          {{ stats.completed }} completed
+        </span>
+        <span class="opacity-40" aria-hidden="true">·</span>
+        <span class="inline-flex items-center gap-1">
+          <UIcon name="i-lucide-git-pull-request-arrow" class="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          {{ stats.inFlight }} in-flight
+        </span>
+        <template v-if="stats.queued">
+          <span class="opacity-40" aria-hidden="true">·</span>
+          <span class="inline-flex items-center gap-1">
+            <UIcon name="i-lucide-git-pull-request-draft" class="size-3.5 shrink-0" />
+            {{ stats.queued }} queued
           </span>
-        </div>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-          <span>prs <span class="font-semibold text-neutral-900 dark:text-white">{{ stats.total }}</span></span>
-          <span>completed <span class="font-semibold text-nvidia dark:text-nvidia-bright">{{ stats.completed }}</span></span>
-          <span>in-flight <span class="font-semibold text-amber-600 dark:text-amber-400">{{ stats.inFlight }}</span></span>
-          <span v-if="stats.queued">queued <span class="font-semibold text-neutral-700 dark:text-neutral-300">{{ stats.queued }}</span></span>
-        </div>
-        <div class="border-t border-neutral-200 dark:border-neutral-800 px-3 py-1.5 text-neutral-400 dark:text-neutral-500">
-          <span class="select-none">// </span>making every FLOP count
-        </div>
+        </template>
       </div>
+
+      <!-- Client-only: the HTML is ISR-cached, so a server-rendered age would hydrate stale. -->
+      <ClientOnly>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 font-mono text-xs text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+          :aria-label="`Data updated ${updatedAgo}. Refresh now.`"
+          @click="revalidate"
+        >
+          <span class="relative flex size-1.5">
+            <span v-if="isFresh" class="absolute inline-flex h-full w-full animate-ping rounded-full bg-nvidia opacity-60" />
+            <span
+              class="relative inline-flex size-1.5 rounded-full"
+              :class="isFresh ? 'bg-nvidia' : 'bg-neutral-400 dark:bg-neutral-600'"
+            />
+          </span>
+          updated {{ updatedAgo }}
+        </button>
+        <template #fallback>
+          <div class="h-4" />
+        </template>
+      </ClientOnly>
       <div class="mb-6 sm:mb-10" />
     </div>
 
