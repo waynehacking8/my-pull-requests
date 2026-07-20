@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     favicon: joinURL(domain, 'favicon.png'),
     copyright: `CC BY-NC-SA 4.0 2024 © ${user.name}`,
     feedLinks: {
-      rss: `${domain}/rss.xml`,
+      rss: `${domain}/feed.xml`,
     },
   })
 

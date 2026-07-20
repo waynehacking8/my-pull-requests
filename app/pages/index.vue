@@ -86,7 +86,7 @@ const items = computed(() => [
     },
   }],
   [{
-    label: orderKey.value === 'date' ? 'Oldset' : 'Ascending',
+    label: orderKey.value === 'date' ? 'Oldest' : 'Ascending',
     icon: 'i-lucide-arrow-up-narrow-wide',
     checked: order.value === 'asc',
     type: 'checkbox' as const,
@@ -241,7 +241,7 @@ const orderedPrs = computed(() => {
           size="xs"
         >
           <UButton
-            :label="orderKey === 'star' ? 'Stars': order === 'asc' ? 'Oldset': 'Newset'"
+            :label="orderKey === 'star' ? 'Stars': order === 'asc' ? 'Oldest': 'Newest'"
             :icon="order === 'asc' ? 'i-lucide-arrow-up-narrow-wide': 'i-lucide-arrow-down-narrow-wide' "
             color="neutral"
             variant="soft"

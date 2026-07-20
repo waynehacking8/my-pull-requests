@@ -72,7 +72,7 @@ const stateLabels: Record<PullRequest['state'], string> = {
           #{{ data.number }}
         </a>
 
-        <time :datatime="data.created_at" class="text-xs text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(data.created_at)) }}</time>
+        <time :datetime="data.created_at" class="text-xs text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(data.created_at)) }}</time>
       </div>
     </div>
   </div>
