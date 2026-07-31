@@ -6,9 +6,11 @@ export default defineNuxtConfig({
 
   $production: {
     routeRules: {
-      // 60s keeps the page close to real-time while staying far inside GitHub's
-      // rate limits: one regeneration costs ~13 API calls (search + user + repos).
-      // The client also revalidates on tab focus, so returning to the page is instant.
+      // 60s is how soon a cached copy *may* be rebuilt, not how often it is:
+      // Vercel only regenerates when a request arrives, and serves the stale
+      // copy to whoever triggers it. Freshness therefore comes from the
+      // warm-cache workflow polling these routes, not from this number.
+      // One regeneration costs ~13 API calls (search + user + repos).
       '/': { isr: 60 },
       '/api/contributions': { isr: 60 },
       // Feed readers poll on their own schedule, no need to regenerate as often.
