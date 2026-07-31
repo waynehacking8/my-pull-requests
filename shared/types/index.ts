@@ -9,6 +9,9 @@ export type PullRequest = {
   title: string
   url: string
   created_at: string
+  // Null unless the PR landed. Kept separate from created_at so the card can
+  // report when work shipped rather than when it was first proposed.
+  merged_at: string | null
   state: 'merged' | 'draft' | 'open' | 'closed'
   number: number
   type: 'User' | 'Organization'

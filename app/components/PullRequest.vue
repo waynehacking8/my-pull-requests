@@ -1,7 +1,17 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   data: PullRequest
 }>()
+
+// Rendering created_at for every state made a PR merged yesterday read
+// "3 weeks ago" beside a green "completed" badge — the timestamp contradicted
+// the badge. Merged PRs report when the work landed instead.
+const activityAt = computed(() => prActivityAt(props.data))
+const activityLabel = computed(() => props.data.merged_at ? 'merged' : props.data.state === 'draft' ? 'drafted' : 'opened')
+const activityTitle = computed(() =>
+  `${activityLabel.value} ${new Date(activityAt.value).toISOString().slice(0, 10)}`
+  + (props.data.merged_at ? ` · opened ${props.data.created_at.slice(0, 10)}` : ''),
+)
 
 function formatStars(stars: number) {
   return new Intl.NumberFormat('en-US', {
@@ -100,7 +110,7 @@ const stateLabels: Record<PullRequest['state'], string> = {
           #{{ data.number }}
         </a>
 
-        <time :datetime="data.created_at" class="text-xs text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(data.created_at)) }}</time>
+        <time :datetime="activityAt" :title="activityTitle" class="text-xs text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(activityAt)) }}</time>
       </div>
     </div>
   </article>
