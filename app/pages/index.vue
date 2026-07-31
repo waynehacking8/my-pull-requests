@@ -16,7 +16,10 @@ const userUrl = computed(() => `https://github.com/${user.value.username}`)
 const generatedAt = computed(() => new Date(contributions.value!.generatedAt))
 const updatedAgo = useTimeAgo(generatedAt)
 const now = useTimestamp({ interval: 10_000 })
-const isFresh = computed(() => now.value - generatedAt.value.getTime() < 2 * 60_000)
+// Freshness has to be judged against what actually refreshes the cache: the
+// warm-cache workflow, on a 10-minute cron. The old 2-minute window reported
+// stale almost permanently even when everything was working.
+const isFresh = computed(() => now.value - generatedAt.value.getTime() < 15 * 60_000)
 
 let revalidating = false
 async function revalidate() {
@@ -129,8 +132,11 @@ const orderedPrs = computed(() => {
       return order.value === 'asc' ? a.stars - b.stars : b.stars - a.stars
     }
     else {
-      const dateA = new Date(a.created_at).getTime()
-      const dateB = new Date(b.created_at).getTime()
+      // Order by when each PR last moved, not when it was opened. Sorting on
+      // created_at buried a PR merged yesterday behind three weeks of newer
+      // proposals, so freshly landed work never surfaced on an activity wall.
+      const dateA = new Date(prActivityAt(a)).getTime()
+      const dateB = new Date(prActivityAt(b)).getTime()
       return order.value === 'asc' ? dateA - dateB : dateB - dateA
     }
   })

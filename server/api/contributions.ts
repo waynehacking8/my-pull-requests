@@ -3,6 +3,14 @@
 const SEARCH_PAGE_SIZE = 100
 const SEARCH_RESULT_LIMIT = 1000
 
+// `Number(process.env.X ?? fallback)` only reaches the fallback when the var is
+// absent. A var that is present but blank — which is what .env.example hands you
+// — parses to 0, and PR_COUNT=0 renders an empty wall with no error anywhere.
+function positiveIntFromEnv(value: string | undefined, fallback: number): number {
+  const parsed = Number(value?.trim())
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
+}
+
 export default defineEventHandler(async () => {
   const octokit = useOctokit()
   // Fetch user from token
@@ -15,7 +23,7 @@ export default defineEventHandler(async () => {
   const hidePrivateRepos = process.env.HIDE_PRIVATE_REPOS === 'true'
   const excludeRepos = process.env.EXCLUDE_REPOS?.split(',').map(repo => repo.trim()).filter(Boolean) ?? []
   const excludeOrgs = process.env.EXCLUDE_ORGS?.split(',').map(org => org.trim()).filter(Boolean) ?? []
-  const prCount = Number(process.env.PR_COUNT ?? 50)
+  const prCount = positiveIntFromEnv(process.env.PR_COUNT, 50)
 
   // Fetch pull requests from user
   const queryParts = [
@@ -75,12 +83,14 @@ export default defineEventHandler(async () => {
   const prs: PullRequest[] = items.slice(0, wanted).map((pr) => {
     const fullName = pr.repository_url.split('/').slice(-2).join('/')
     const repo = repos.get(fullName)
+    if (!repo) throw new Error(`Repository metadata missing for ${fullName}`)
 
     return {
       repo: fullName,
       title: pr.title,
       url: pr.html_url,
       created_at: pr.created_at,
+      merged_at: pr.pull_request?.merged_at ?? null,
       state: pr.pull_request?.merged_at ? 'merged' : pr.draft ? 'draft' : pr.state as 'open' | 'closed',
       number: pr.number,
       type: repo.owner.type, // Add type information (User or Organization)
