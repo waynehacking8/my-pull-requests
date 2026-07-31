@@ -1,3 +1,8 @@
+// The search API caps per_page at 100 and refuses to page past 1000 results,
+// so both limits have to be respected explicitly rather than assumed away.
+const SEARCH_PAGE_SIZE = 100
+const SEARCH_RESULT_LIMIT = 1000
+
 export default defineEventHandler(async () => {
   const octokit = useOctokit()
   // Fetch user from token
@@ -22,23 +27,57 @@ export default defineEventHandler(async () => {
     ...excludeOrgs.map(org => `-org:${org}`),
   ].filter(Boolean)
 
-  const { data } = await octokit.request('GET /search/issues', {
-    q: queryParts.join('+'),
-    per_page: prCount,
-    page: 1,
-    advanced_search: 'true',
-  })
+  const q = queryParts.join('+')
+  const wanted = Math.min(prCount, SEARCH_RESULT_LIMIT)
 
-  console.log(data.items.length)
+  // Page through the results instead of asking for prCount in one shot: once the
+  // total crosses per_page's ceiling of 100 a single request silently drops the
+  // remainder. per_page stays constant so page boundaries don't shift underneath
+  // the loop; the overshoot is trimmed afterwards.
+  const items = []
+  const seen = new Set<number>()
+  for (let page = 1; items.length < wanted; page++) {
+    const { data } = await octokit.request('GET /search/issues', {
+      q,
+      // Without an explicit sort GitHub orders by relevance, which makes it
+      // arbitrary which PRs fall off the end. Newest-first keeps it predictable.
+      sort: 'created',
+      order: 'desc',
+      per_page: SEARCH_PAGE_SIZE,
+      page,
+      advanced_search: 'true',
+    })
 
-  const prs: PullRequest[] = []
-  // For each PR, fetch the repository details
-  for (const pr of data.items) {
-    const [owner, name] = pr.repository_url.split('/').slice(-2)
-    const repo = await fetchRepo(owner!, name!)
+    // The search index is eventually consistent, so paging one query can return
+    // the same PR on two pages and skip another entirely (measured: 88 distinct
+    // results across 90 rows). Deduplicate rather than trusting page boundaries.
+    for (const item of data.items) {
+      if (seen.has(item.id)) continue
+      seen.add(item.id)
+      items.push(item)
+    }
 
-    prs.push({
-      repo: `${owner}/${name}`,
+    if (data.items.length < SEARCH_PAGE_SIZE) break
+    // Deduplication can hold the tally under `wanted` forever, so stop once
+    // every page the API is willing to serve has been requested.
+    if (page >= Math.ceil(Math.min(data.total_count, SEARCH_RESULT_LIMIT) / SEARCH_PAGE_SIZE)) break
+  }
+
+  // Resolve each distinct repository once and in parallel. The previous per-PR
+  // sequential await served most lookups from cache, but still serialised one
+  // round trip per new repo into the critical path of every regeneration.
+  const repoNames = [...new Set(items.slice(0, wanted).map(pr => pr.repository_url.split('/').slice(-2).join('/')))]
+  const repos = new Map(await Promise.all(repoNames.map(async (fullName) => {
+    const [owner, name] = fullName.split('/')
+    return [fullName, await fetchRepo(owner!, name!)] as const
+  })))
+
+  const prs: PullRequest[] = items.slice(0, wanted).map((pr) => {
+    const fullName = pr.repository_url.split('/').slice(-2).join('/')
+    const repo = repos.get(fullName)
+
+    return {
+      repo: fullName,
       title: pr.title,
       url: pr.html_url,
       created_at: pr.created_at,
@@ -46,8 +85,8 @@ export default defineEventHandler(async () => {
       number: pr.number,
       type: repo.owner.type, // Add type information (User or Organization)
       stars: repo.stargazers_count,
-    })
-  }
+    }
+  })
 
   return {
     user,

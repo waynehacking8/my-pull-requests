@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
-const { data: contributions, refresh } = await useFetch <Contributions> ('/api/contributions')
+const { data: contributions } = await useFetch <Contributions> ('/api/contributions')
 
 if (!contributions.value) {
   throw createError('Could not load User activity')
@@ -23,7 +23,17 @@ async function revalidate() {
   if (revalidating) return
   revalidating = true
   try {
-    await refresh()
+    const next = await $fetch<Contributions>('/api/contributions')
+
+    // The page HTML and this endpoint are cached independently, so a poll can
+    // hand back an older snapshot than the one already on screen — which showed
+    // up as merged PRs reverting to open. Only ever move the payload forward.
+    if (!contributions.value || Date.parse(next.generatedAt) > Date.parse(contributions.value.generatedAt)) {
+      contributions.value = next
+    }
+  }
+  catch {
+    // A failed poll should leave the last good payload rendered.
   }
   finally {
     revalidating = false

@@ -1,0 +1,49 @@
+name: Warm ISR cache
+
+# Vercel's ISR is revalidate-on-request: once the 60s window lapses the cached
+# copy is only rebuilt when somebody asks for it, and the asker still gets the
+# stale one. On a site with near-zero traffic that let a payload sit for 16h,
+# so a PR merged in the meantime kept rendering as open. This job is the
+# traffic — it absorbs the stale response so real visitors land on a fresh one.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# Overlapping runs would just fight over the same cache entry.
+concurrency:
+  group: warm-cache
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: https://prs.wayne.is-a.dev
+    steps:
+      - name: Trigger and confirm regeneration
+        run: |
+          set -euo pipefail
+          paths=(/ /api/contributions /feed.xml)
+
+          # Pass 1 takes the stale response and kicks off the background
+          # rebuild; pass 2 lands on the result of that rebuild.
+          for pass in 1 2; do
+            for path in "${paths[@]}"; do
+              code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                --max-time 30 --retry 3 --retry-delay 5 --retry-all-errors \
+                "$SITE$path")
+              echo "pass $pass  $path  -> $code"
+              [ "$code" = 200 ] || exit 1
+            done
+            if [ "$pass" = 1 ]; then sleep 20; fi
+          done
+
+      - name: Report data freshness
+        run: |
+          set -euo pipefail
+          curl -sS --max-time 30 "$SITE/api/contributions" \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); print("generatedAt:", d["generatedAt"], "| prs:", len(d["prs"]))'
