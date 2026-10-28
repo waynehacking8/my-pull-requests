@@ -166,9 +166,6 @@ const filteredPrs = computed(() => {
 <template>
   <UContainer class="px-4 py-6 sm:px-6 sm:py-10 lg:px-8 max-w-4xl">
     <header class="hero-panel flex flex-col items-center gap-2 px-5 py-7 sm:px-8 sm:py-9">
-      <p class="eyebrow">
-        Open-source activity
-      </p>
       <a :href="userUrl" target="_blank"><UAvatar
         :src="user.avatar"
         :alt="user.name"
@@ -179,11 +176,7 @@ const filteredPrs = computed(() => {
         <a :href="userUrl" target="_blank">
           {{ user.name }}
         </a>
-        <span class="text-primary"> ships upstream.</span>
       </h1>
-      <p class="max-w-xl text-center text-sm sm:text-base text-neutral-600 dark:text-neutral-300">
-        GPU kernels, LLM serving, and correctness fixes across the open-source inference stack.
-      </p>
       <div class="flex items-center justify-center gap-1 text-neutral-700 dark:text-neutral-300">
         <ClientOnly>
           <UButton
