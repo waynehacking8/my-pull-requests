@@ -66,10 +66,10 @@ useHead({
 })
 const url = useRequestURL()
 useSeoMeta({
-  title: `${user.value.name} — LLM inference pull requests: TensorRT-LLM, vLLM, SGLang, FlashInfer`,
-  description: `Every upstream pull request by ${user.value.name}, an LLM inference software engineer in Taipei: CUDA kernels and fixes in TensorRT-LLM, vLLM, SGLang, FlashInfer, PyTorch and Dynamo.`,
-  ogTitle: `${user.value.name} — LLM inference pull requests`,
-  ogDescription: 'CUDA kernels and fixes in TensorRT-LLM, vLLM, SGLang, FlashInfer, PyTorch and Dynamo.',
+  title: 'Wayne Chiu',
+  description: 'Upstream pull requests to TensorRT-LLM, vLLM, SGLang and FlashInfer.',
+  ogTitle: 'Wayne Chiu',
+  ogDescription: 'Upstream pull requests to TensorRT-LLM, vLLM, SGLang and FlashInfer.',
   twitterCard: 'summary_large_image',
   ogImage: `${url.origin}/og.png`,
   twitterImage: `${url.origin}/og.png`,
