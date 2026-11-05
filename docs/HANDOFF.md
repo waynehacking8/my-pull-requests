@@ -8,9 +8,11 @@
 - `useLiveRecords()` polls `/api/contributions.json` and `/api/reviews.json` on both pages and only moves data forward.
 - Excluded from both walls: `is-a-dev/register`, this repo, `chihmingyang/cs2680` (EXCLUDE_REPOS in the workflow). Matching is case-insensitive.
 
+- `/api/contributions.json` feeds the portfolio's Patches page (waynehacking8.github.io, `hooks/patches.py`). Keep PR_COUNT above the real open plus merged total, or that page undercounts.
+
 ## Local build
 
-`NUXT_GITHUB_TOKEN=$(gh auth token) GITHUB_USERNAME=waynehacking8 HIDE_PRIVATE_REPOS=true PR_COUNT=50 EXCLUDE_REPOS=is-a-dev/register,waynehacking8/my-pull-requests,chihmingyang/cs2680 NUXT_PUBLIC_SITE_URL=https://prs.wayne.is-a.dev pnpm exec nuxi generate`
+`NUXT_GITHUB_TOKEN=$(gh auth token) GITHUB_USERNAME=waynehacking8 HIDE_PRIVATE_REPOS=true PR_COUNT=500 EXCLUDE_REPOS=is-a-dev/register,waynehacking8/my-pull-requests,chihmingyang/cs2680 NUXT_PUBLIC_SITE_URL=https://prs.wayne.is-a.dev pnpm exec nuxi generate`
 
 On Windows, serve `.output/public` with `python -m http.server -d <path>` started from another directory, or the next generate fails with EBUSY.
 

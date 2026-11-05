@@ -47,7 +47,9 @@ jobs:
           NUXT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_USERNAME: ${{ github.repository_owner }}
           HIDE_PRIVATE_REPOS: 'true'
-          PR_COUNT: '50'
+          # The portfolio's Patches page counts from this feed, so it must hold
+          # every open and merged PR, not only the newest 50.
+          PR_COUNT: '500'
           # PRs that only maintain this site and its domains are not contributions,
           # and the course repo is coursework, not upstream review.
           EXCLUDE_REPOS: is-a-dev/register,${{ github.repository }},chihmingyang/cs2680
