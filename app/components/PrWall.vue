@@ -107,7 +107,7 @@ const filteredPrs = computed(() => {
         <input
           v-model="query"
           type="search"
-          placeholder="Search title, repository, or number"
+          placeholder="Search title, repo, or #"
           autocomplete="off"
         >
         <button

@@ -142,13 +142,15 @@ body {
 }
 
 .state-filters button:hover { color: var(--ink); background: var(--surface-soft); }
+/* 32px touch targets, as on the portfolio's filter buttons. */
+@media (pointer: coarse) { .state-filters button { min-height: 2rem; } }
 .state-filters button.active { color: white; background: var(--accent-solid); }
 .state-filters button:active { transform: scale(0.96); }
 
-/* Section tabs: the same panel material as the filter toolbar below (surface,
-   line, 1rem radius) and the same filled accent for the current choice, so
-   the page reads as one system. Hierarchy comes from size: two full-width
-   halves above, small pills below. */
+/* Section tabs: the same panel material as the filter toolbar below. The
+   current tab is a raised segment (soft surface, hairline border, ink text,
+   accent count), not a solid accent block: a half-width fill outweighed the
+   content and stacked a second heavy block on the filter pill under it. */
 .page-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -165,17 +167,26 @@ body {
   align-items: baseline;
   justify-content: center;
   gap: 0.45rem;
-  min-height: 2.75rem;
-  padding: 0.6rem 0.75rem;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid transparent;
   border-radius: 0.7rem;
   color: var(--muted);
-  font-size: 0.95rem;
-  font-weight: 650;
-  transition: color 160ms ease, background-color 160ms ease;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
 }
-.page-tabs a span { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 500; }
-.page-tabs a.active { color: white; background: var(--accent-solid); }
-@media (hover: hover) { .page-tabs a:not(.active):hover { color: var(--ink); background: var(--surface-soft); } }
+.page-tabs a span { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; }
+.page-tabs a { white-space: nowrap; }
+@media (max-width: 22.49rem) { .page-tabs a { gap: 0.3rem; padding-inline: 0.4rem; font-size: 0.85rem; } }
+.page-tabs a.active {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgb(46 43 58 / 8%);
+}
+.page-tabs a.active span { color: var(--accent); }
+@media (hover: hover) { .page-tabs a:not(.active):hover { color: var(--ink); } }
 
 .results-summary {
   margin: 0 0 0.65rem;
@@ -251,12 +262,10 @@ body {
   .hero-panel { border-radius: 1.2rem; }
   .toolbar { grid-template-columns: minmax(0, 1fr) auto; }
   .pr-card { padding: 0.75rem; }
-  /* Reviews has five states, 364px of buttons against a 320px row, so the
-     last one was cut off behind a sideways scroll. On phones the states share
-     the row equally, each with its count under the label. */
-  .state-filters { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.2rem; overflow: visible; }
-  .state-filters button { display: flex; flex-direction: column; align-items: center; padding: 0.4rem 0.15rem; line-height: 1.25; }
-  .state-filters button span { margin-left: 0; }
+  /* Same pills as on desktop. Reviews has five states, more than a phone row
+     holds, so they wrap to a second line instead of hiding behind a scroll. */
+  .state-filters { flex-wrap: wrap; gap: 0.15rem; overflow: visible; }
+  .state-filters button { padding: 0.42rem 0.38rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
