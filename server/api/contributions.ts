@@ -13,8 +13,12 @@ function positiveIntFromEnv(value: string | undefined, fallback: number): number
 
 export default defineEventHandler(async () => {
   const octokit = useOctokit()
-  // Fetch user from token
-  const userResponse = await octokit.request('GET /user')
+  // Fetch user from token. The Actions GITHUB_TOKEN cannot call GET /user, so the
+  // Pages build names the account in GITHUB_USERNAME instead.
+  const username = process.env.GITHUB_USERNAME?.trim()
+  const userResponse = username
+    ? await octokit.request('GET /users/{username}', { username })
+    : await octokit.request('GET /user')
   const user: User = {
     name: userResponse.data.name ?? userResponse.data.login,
     username: userResponse.data.login,

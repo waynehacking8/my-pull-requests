@@ -3,7 +3,8 @@ import { joinURL } from 'ufo'
 import { getRequestURL } from 'h3'
 
 export default defineEventHandler(async (event) => {
-  const domain = getRequestURL(event).origin
+  // Prerendered at build time, where the request origin is the build host.
+  const domain = useRuntimeConfig(event).public.siteUrl || getRequestURL(event).origin
   const { user, prs } = await $fetch <Contributions> ('/api/contributions')
   const feed = new Feed({
     title: `${user.name} is contributing...`,

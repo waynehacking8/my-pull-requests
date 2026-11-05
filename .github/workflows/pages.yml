@@ -1,0 +1,60 @@
+name: Build and deploy to GitHub Pages
+
+# Based on GitHub's Nuxt starter workflow (actions/starter-workflows pages/nuxtjs.yml).
+# The site is static: every run fetches the PR list and regenerates the pages.
+# The 10-minute cron is what keeps the wall fresh (the page shows "stale" after 15 minutes).
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Overlapping runs would only race to publish the same content.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - id: pages
+        uses: actions/configure-pages@v6
+      - run: pnpm install --frozen-lockfile
+      - name: Generate the static site
+        run: pnpm exec nuxi generate
+        env:
+          NUXT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USERNAME: ${{ github.repository_owner }}
+          HIDE_PRIVATE_REPOS: 'true'
+          PR_COUNT: '50'
+          # From the Pages settings: '' and the custom domain once one is set,
+          # '/my-pull-requests' and the github.io URL before that.
+          NUXT_APP_BASE_URL: ${{ steps.pages.outputs.base_path }}/
+          NUXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.base_url }}
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: .output/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -26,7 +26,7 @@ async function revalidate() {
   if (revalidating) return
   revalidating = true
   try {
-    const next = await $fetch<Contributions>('/api/contributions')
+    const next = await $fetch<Contributions>('/api/contributions.json')
 
     // The page HTML and this endpoint are cached independently, so a poll can
     // hand back an older snapshot than the one already on screen — which showed
@@ -64,15 +64,16 @@ useHead({
     { rel: 'alternate', type: 'application/rss+xml', title: `${user.value.name}'s recent pull requests`, href: '/feed.xml' },
   ],
 })
-const url = useRequestURL()
+// Prerendered pages see the build host, so the public origin comes from config.
+const origin = useRuntimeConfig().public.siteUrl || useRequestURL().origin
 useSeoMeta({
   title: 'Wayne Chiu',
   description: 'Upstream pull requests to TensorRT-LLM, vLLM, SGLang and FlashInfer.',
   ogTitle: 'Wayne Chiu',
   ogDescription: 'Upstream pull requests to TensorRT-LLM, vLLM, SGLang and FlashInfer.',
   twitterCard: 'summary_large_image',
-  ogImage: `${url.origin}/og.png`,
-  twitterImage: `${url.origin}/og.png`,
+  ogImage: `${origin}/og.png`,
+  twitterImage: `${origin}/og.png`,
 })
 
 const stats = computed(() => ({
