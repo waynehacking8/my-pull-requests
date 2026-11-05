@@ -23,6 +23,13 @@ On Windows, serve `.output/public` with `python -m http.server -d <path>` starte
 - GitHub Pages cannot set security headers; scanners will report HSTS, CSP and frame headers missing.
 - Scheduled workflows are disabled by GitHub after 60 days without repository activity; a push re-enables them.
 
+## Supply chain
+
+- Actions pinned to commit SHAs; checkout has `persist-credentials: false`. `.github/dependabot.yml` covers github-actions and npm (pnpm) weekly with a 7-day cooldown.
+- This repo is a fork (atinux/my-pull-requests): GitHub does not run Dependabot version updates on forks until it is switched on in Settings → Advanced Security → "Dependabot version updates". Alerts and security fixes are on.
+- `pnpm.overrides` force esbuild >= 0.28.1 and glob >= 14.0.2. Accepted and left open: minimatch (dev only, ESLint plugin chain; forcing 11 breaks eslint-plugin-import-x's `makeRe` import) and deepmerge (no patched release). Neither ships in the static output.
+- GitHub runs the `*/10` cron far less often than asked (a few times a day); the "stale" dot is expected between runs.
+
 ## Open
 
 - Formal reviews come per contribution year; issue comments stop at 1,000 (MAX_COMMENT_PAGES).
