@@ -41,8 +41,9 @@ jobs:
           GITHUB_USERNAME: ${{ github.repository_owner }}
           HIDE_PRIVATE_REPOS: 'true'
           PR_COUNT: '50'
-          # PRs that only maintain this site and its domains are not contributions.
-          EXCLUDE_REPOS: is-a-dev/register,${{ github.repository }}
+          # PRs that only maintain this site and its domains are not contributions,
+          # and the course repo is coursework, not upstream review.
+          EXCLUDE_REPOS: is-a-dev/register,${{ github.repository }},chihmingyang/cs2680
           # From the Pages settings: '' and the custom domain once one is set,
           # '/my-pull-requests' and the github.io URL before that.
           NUXT_APP_BASE_URL: ${{ steps.pages.outputs.base_path }}/

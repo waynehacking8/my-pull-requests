@@ -1,13 +1,13 @@
 <script setup lang="ts">
 const props = defineProps<{
-  data: PullRequest
+  data: WallItem
 }>()
 
 // Rendering created_at for every state made a PR merged yesterday read
 // "3 weeks ago" beside a green "completed" badge — the timestamp contradicted
 // the badge. Merged PRs report when the work landed instead.
 const activityAt = computed(() => prActivityAt(props.data))
-const activityLabel = computed(() => props.data.merged_at ? 'merged' : props.data.state === 'draft' ? 'drafted' : 'opened')
+const activityLabel = computed(() => props.data.activityVerb ?? (props.data.merged_at ? 'merged' : props.data.state === 'draft' ? 'drafted' : 'opened'))
 const activityTitle = computed(() =>
   `${activityLabel.value} ${new Date(activityAt.value).toISOString().slice(0, 10)}`
   + (props.data.merged_at ? ` · opened ${props.data.created_at.slice(0, 10)}` : ''),
@@ -27,6 +27,12 @@ const stateIcons: Record<PullRequest['state'], string> = {
   closed: 'i-lucide-git-pull-request-closed',
 }
 
+// Issues and RFCs never merge, so they take GitHub's issue glyphs instead of PR ones.
+const isIssue = computed(() => props.data.label === 'Issue' || props.data.label === 'RFC')
+const icon = computed(() => isIssue.value
+  ? (props.data.state === 'closed' ? 'i-lucide-circle-check' : 'i-lucide-circle-dot')
+  : stateIcons[props.data.state])
+
 const stateLabels: Record<PullRequest['state'], string> = {
   open: 'in-flight',
   draft: 'queued',
@@ -41,7 +47,7 @@ const stateLabels: Record<PullRequest['state'], string> = {
       :href="`https://github.com/${data.repo}`"
       target="_blank"
       rel="noopener"
-      :class="['size-10 sm:size-12 shrink-0 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm', data.type === 'Organization' ? 'rounded-lg' : 'rounded-full']"
+      :class="['size-10 sm:size-12 shrink-0 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm', data.type === 'User' ? 'rounded-full' : 'rounded-lg']"
     >
       <img
         :src="`https://github.com/${data.repo.split('/')[0]}.png`"
@@ -63,7 +69,7 @@ const stateLabels: Record<PullRequest['state'], string> = {
           class="pr-title text-sm sm:text-base flex items-start gap-1.5 text-neutral-900 dark:text-white"
         >
           <UIcon
-            :name="stateIcons[data.state]"
+            :name="icon"
             :title="stateLabels[data.state]"
             :class="{
               'text-amber-600 dark:text-amber-400': data.state === 'open',
@@ -74,7 +80,7 @@ const stateLabels: Record<PullRequest['state'], string> = {
             class="size-4 sm:size-5 shrink-0"
           />
 
-          <span>{{ data.title }}</span>
+          <span><span v-if="data.label" class="kind-label">{{ data.label }}</span>{{ data.title }}</span>
         </a>
 
         <div class="flex gap-2 items-bottom font-mono">
@@ -89,20 +95,21 @@ const stateLabels: Record<PullRequest['state'], string> = {
             <span class="truncate">{{ data.repo.split('/')[1] }}</span>
           </a>
           <a
+            v-if="data.stars !== undefined"
             :href="`https://github.com/${data.repo}`"
             target="_blank"
             rel="noopener"
             class="items-center hidden sm:inline-flex gap-0.5 text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white truncate"
           >
             <UIcon name="i-lucide-star" class="size-3 shrink-0" />
-            <span class="text-xs">{{ formatStars(data.stars) }}</span>
+            <span class="text-xs">{{ formatStars(data.stars ?? 0) }}</span>
           </a>
         </div>
       </div>
 
       <div class="flex flex-col justify-between shrink-0 text-right font-mono">
         <a
-          :href="data.url"
+          :href="data.threadUrl ?? data.url"
           target="_blank"
           rel="noopener"
           class="hover:underline text-xs sm:text-sm text-neutral-500 dark:text-neutral-400"

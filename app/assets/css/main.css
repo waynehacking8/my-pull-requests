@@ -145,6 +145,15 @@ body {
 .state-filters button.active { color: white; background: var(--accent-solid); }
 .state-filters button:active { transform: scale(0.96); }
 
+/* Section tabs: larger than the state filters and underlined rather than
+   filled, so switching page never looks like filtering the list. */
+.page-tabs { display: flex; justify-content: center; gap: 1.75rem; margin-bottom: 1rem; }
+.page-tabs a { position: relative; padding: 0.35rem 0.1rem 0.55rem; color: var(--muted); font-size: 1.05rem; font-weight: 600; }
+.page-tabs a span { margin-left: 0.3rem; font-size: 0.8rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.page-tabs a.active { color: var(--ink); }
+.page-tabs a.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 3px; background: var(--accent); }
+@media (hover: hover) { .page-tabs a:not(.active):hover { color: var(--ink); } }
+
 .results-summary {
   margin: 0 0 0.65rem;
   padding: 0 0.2rem;
@@ -164,6 +173,7 @@ body {
 
 .pr-title { line-height: 1.4; text-wrap: pretty; }
 .pr-title span { min-width: 0; overflow-wrap: anywhere; }
+.kind-label { display: inline-block; margin-right: 0.4rem; padding: 0 0.4rem; border-radius: 0.4rem; background: var(--surface-soft); border: 1px solid var(--line); color: var(--muted); font-size: 0.72rem; font-weight: 600; line-height: 1.35rem; vertical-align: 0.08rem; }
 .pr-title:hover { color: var(--accent); text-decoration: none; }
 
 @media (hover: hover) {

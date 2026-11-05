@@ -11,6 +11,17 @@ export function useOctokit() {
   return _octokit
 }
 
+// The Actions GITHUB_TOKEN cannot call GET /user, so the Pages build names the
+// account in GITHUB_USERNAME instead.
+export async function fetchUser(): Promise<User> {
+  const octokit = useOctokit()
+  const username = process.env.GITHUB_USERNAME?.trim()
+  const { data } = username
+    ? await octokit.request('GET /users/{username}', { username })
+    : await octokit.request('GET /user')
+  return { name: data.name ?? data.login, username: data.login, avatar: data.avatar_url }
+}
+
 // In memory cache as this is called internally in /api/contributions
 const RepoCache = new Map()
 

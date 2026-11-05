@@ -7,7 +7,8 @@
     "build": "nuxi build",
     "postinstall": "nuxi prepare",
     "lint": "eslint .",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test": "node --test \"tests/*.test.ts\""
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.68",

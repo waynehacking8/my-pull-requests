@@ -1,6 +1,5 @@
 <script setup lang="ts">
-const colorMode = useColorMode()
-const { data: contributions } = await useFetch <Contributions> ('/api/contributions')
+const { data: contributions } = await useContributions()
 
 if (!contributions.value) {
   throw createError('Could not load User activity')
@@ -9,7 +8,6 @@ if (!contributions.value) {
 // Kept as computed rather than destructured so the page re-renders after a revalidation.
 const user = computed(() => contributions.value!.user)
 const prs = computed(() => contributions.value!.prs)
-const userUrl = computed(() => `https://github.com/${user.value.username}`)
 
 // The page is a static build, so freshness has to be measured from the build
 // timestamp instead of asserted with a permanently "live" indicator.
@@ -82,150 +80,11 @@ const stats = computed(() => ({
   inFlight: prs.value.filter(pr => pr.state === 'open').length,
   queued: prs.value.filter(pr => pr.state === 'draft').length,
 }))
-
-const order = ref<'asc' | 'desc'>('desc')
-const orderKey = ref<'date' | 'star'>('date')
-
-const items = computed(() => [
-  [{
-    label: 'Star',
-    icon: 'i-lucide-star',
-    checked: orderKey.value === 'star',
-    type: 'checkbox' as const,
-    onUpdateChecked(checked: boolean) {
-      orderKey.value = checked ? 'star' : 'date'
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
-    },
-  }],
-  [{
-    label: orderKey.value === 'date' ? 'Oldest' : 'Ascending',
-    icon: 'i-lucide-arrow-up-narrow-wide',
-    checked: order.value === 'asc',
-    type: 'checkbox' as const,
-    onUpdateChecked(checked: boolean) {
-      if (!checked) return
-      order.value = 'asc'
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
-    },
-  }, {
-    label: orderKey.value === 'date' ? 'Newest' : 'Descending',
-    icon: 'i-lucide-arrow-down-narrow-wide',
-    checked: order.value === 'desc',
-    type: 'checkbox' as const,
-    onUpdateChecked(checked: boolean) {
-      if (!checked) return
-      order.value = 'desc'
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
-    },
-  }],
-])
-
-const orderedPrs = computed(() => {
-  const sortedPrs = [...prs.value]
-  sortedPrs.sort((a, b) => {
-    if (orderKey.value === 'star') {
-      return order.value === 'asc' ? a.stars - b.stars : b.stars - a.stars
-    }
-    else {
-      // Order by when each PR last moved, not when it was opened. Sorting on
-      // created_at buried a PR merged yesterday behind three weeks of newer
-      // proposals, so freshly landed work never surfaced on an activity wall.
-      const dateA = new Date(prActivityAt(a)).getTime()
-      const dateB = new Date(prActivityAt(b)).getTime()
-      return order.value === 'asc' ? dateA - dateB : dateB - dateA
-    }
-  })
-  return sortedPrs
-})
-
-const query = ref('')
-const stateFilter = ref<'all' | PullRequest['state']>('all')
-const stateOptions = computed(() => [
-  { value: 'all' as const, label: 'All', count: prs.value.length },
-  { value: 'merged' as const, label: 'Merged', count: stats.value.completed },
-  { value: 'open' as const, label: 'Open', count: stats.value.inFlight },
-  { value: 'draft' as const, label: 'Draft', count: stats.value.queued },
-  { value: 'closed' as const, label: 'Closed', count: prs.value.filter(pr => pr.state === 'closed').length },
-].filter(option => option.value === 'all' || option.count > 0))
-
-const filteredPrs = computed(() => {
-  const needle = query.value.trim().toLocaleLowerCase()
-  return orderedPrs.value.filter((pr) => {
-    const matchesState = stateFilter.value === 'all' || pr.state === stateFilter.value
-    const matchesQuery = !needle || `${pr.title} ${pr.repo} #${pr.number}`.toLocaleLowerCase().includes(needle)
-    return matchesState && matchesQuery
-  })
-})
 </script>
 
 <template>
   <UContainer class="px-4 py-6 sm:px-6 sm:py-10 lg:px-8 max-w-4xl">
-    <header class="hero-panel flex flex-col items-center gap-2 px-5 py-7 sm:px-8 sm:py-9">
-      <a :href="userUrl" target="_blank"><UAvatar
-        :src="user.avatar"
-        :alt="user.name"
-        size="xl"
-      />
-      </a>
-      <h1 class="text-2xl sm:text-4xl text-center font-semibold tracking-tight text-neutral-950 dark:text-white">
-        <a :href="userUrl" target="_blank">
-          {{ user.name }}
-        </a>
-      </h1>
-      <div class="flex items-center justify-center gap-1 text-neutral-700 dark:text-neutral-300">
-        <ClientOnly>
-          <UButton
-            :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-            :icon="colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'"
-            color="neutral"
-            variant="link"
-            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
-          />
-          <template #fallback>
-            <div class="w-8 h-8" />
-          </template>
-        </ClientOnly>
-        <UButton
-          :to="userUrl"
-          external
-          target="_blank"
-          :aria-label="`${user.name}'s GitHub profile`"
-          icon="i-lucide-github"
-          color="neutral"
-          variant="link"
-        />
-        <UButton
-          to="/feed.xml"
-          external
-          target="_blank"
-          aria-label="RSS Feed"
-          icon="i-lucide-rss"
-          color="neutral"
-          variant="link"
-        />
-        <UButton
-          to="https://wayne.is-a.dev/"
-          external
-          aria-label="Open Wayne's portfolio"
-          icon="i-lucide-panels-top-left"
-          color="neutral"
-          variant="link"
-        />
-        <UButton
-          to="https://wayne.is-a.dev/cv.pdf"
-          external
-          aria-label="Open Wayne's CV"
-          icon="i-lucide-file-user"
-          color="neutral"
-          variant="link"
-        />
-      </div>
+    <WallHero :user="user">
       <!-- Same mono/neutral metadata treatment as the PR rows below, so it reads as one page. -->
       <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-mono text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
         <span>{{ stats.total }} prs</span>
@@ -269,77 +128,11 @@ const filteredPrs = computed(() => {
           <div class="h-4" />
         </template>
       </ClientOnly>
-    </header>
+    </WallHero>
 
     <main class="mt-6 sm:mt-8">
-      <section class="toolbar" aria-label="Pull request filters">
-        <label class="search-field">
-          <UIcon name="i-lucide-search" class="size-4 shrink-0" aria-hidden="true" />
-          <span class="sr-only">Search pull requests</span>
-          <input
-            v-model="query"
-            type="search"
-            placeholder="Search title, repository, or PR number"
-            autocomplete="off"
-          >
-          <button
-            v-if="query"
-            type="button"
-            class="clear-search"
-            aria-label="Clear search"
-            @click="query = ''"
-          >
-            <UIcon name="i-lucide-x" class="size-4" />
-          </button>
-        </label>
-        <div class="state-filters" aria-label="Filter by pull request state">
-          <button
-            v-for="option of stateOptions"
-            :key="option.value"
-            type="button"
-            :class="{ active: stateFilter === option.value }"
-            :aria-pressed="stateFilter === option.value"
-            @click="stateFilter = option.value"
-          >
-            {{ option.label }} <span>{{ option.count }}</span>
-          </button>
-        </div>
-        <UDropdownMenu
-          :items="items"
-          :content="{
-            align: 'start',
-            side: 'bottom',
-            sideOffset: 8,
-          }"
-          :ui="{
-            content: 'w-48',
-          }"
-          size="xs"
-        >
-          <UButton
-            :label="orderKey === 'star' ? 'Stars': order === 'asc' ? 'Oldest': 'Newest'"
-            :icon="order === 'asc' ? 'i-lucide-arrow-up-narrow-wide': 'i-lucide-arrow-down-narrow-wide' "
-            color="neutral"
-            variant="soft"
-            size="xs"
-          />
-        </UDropdownMenu>
-      </section>
-
-      <p class="results-summary" aria-live="polite">
-        Showing {{ filteredPrs.length }} of {{ prs.length }} pull requests
-      </p>
-
-      <div v-if="filteredPrs.length" class="flex flex-col gap-3 sm:gap-4">
-        <PullRequest v-for="pr of filteredPrs" :key="pr.url" :data="pr" />
-      </div>
-      <div v-else class="empty-state">
-        <UIcon name="i-lucide-search-x" class="size-7" />
-        <p>No pull requests match this view.</p>
-        <button type="button" @click="query = ''; stateFilter = 'all'">
-          Reset filters
-        </button>
-      </div>
+      <PageTabs />
+      <PrWall :items="prs" noun="pull requests" />
     </main>
   </UContainer>
 </template>

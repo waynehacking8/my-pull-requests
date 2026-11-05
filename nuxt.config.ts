@@ -24,7 +24,7 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'github_pages',
     prerender: {
-      routes: ['/', '/api/contributions', '/api/contributions.json', '/feed.xml'],
+      routes: ['/', '/api/contributions', '/api/contributions.json', '/feed.xml', '/reviews', '/api/reviews', '/api/reviews.json'],
     },
   },
 
