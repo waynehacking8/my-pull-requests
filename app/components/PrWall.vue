@@ -5,11 +5,7 @@ const props = defineProps<{
   noun: string
 }>()
 
-const stats = computed(() => ({
-  completed: props.items.filter(pr => pr.state === 'merged').length,
-  inFlight: props.items.filter(pr => pr.state === 'open').length,
-  queued: props.items.filter(pr => pr.state === 'draft').length,
-}))
+const counts = computed(() => countStates(props.items))
 // Review threads carry no star counts, so the star sort only exists where it can work.
 const hasStars = computed(() => props.items.some(pr => pr.stars !== undefined))
 
@@ -80,17 +76,23 @@ const query = ref('')
 const stateFilter = ref<'all' | WallItem['state']>('all')
 const stateOptions = computed(() => [
   { value: 'all' as const, label: 'All', count: props.items.length },
-  { value: 'merged' as const, label: 'Merged', count: stats.value.completed },
-  { value: 'open' as const, label: 'Open', count: stats.value.inFlight },
-  { value: 'draft' as const, label: 'Draft', count: stats.value.queued },
-  { value: 'closed' as const, label: 'Closed', count: props.items.filter(pr => pr.state === 'closed').length },
+  { value: 'merged' as const, label: 'Merged', count: counts.value.merged },
+  { value: 'open' as const, label: 'Open', count: counts.value.open },
+  { value: 'draft' as const, label: 'Draft', count: counts.value.draft },
+  { value: 'closed' as const, label: 'Closed', count: counts.value.closed },
 ].filter(option => option.value === 'all' || option.count > 0))
+
+// A refresh can empty a state and remove its button; fall back to All rather
+// than leave an empty list with nothing highlighted.
+watch(stateOptions, (options) => {
+  if (!options.some(option => option.value === stateFilter.value)) stateFilter.value = 'all'
+})
 
 const filteredPrs = computed(() => {
   const needle = query.value.trim().toLocaleLowerCase()
   return orderedPrs.value.filter((pr) => {
     const matchesState = stateFilter.value === 'all' || pr.state === stateFilter.value
-    const matchesQuery = !needle || `${pr.title} ${pr.repo} #${pr.number} ${pr.label ?? ''}`.toLocaleLowerCase().includes(needle)
+    const matchesQuery = !needle || `${pr.title} ${pr.repo} #${pr.number} ${pr.kind ? KIND_LABEL[pr.kind] : ''}`.toLocaleLowerCase().includes(needle)
     return matchesState && matchesQuery
   })
 })

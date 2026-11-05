@@ -7,6 +7,7 @@ const props = defineProps<{
 // "3 weeks ago" beside a green "completed" badge — the timestamp contradicted
 // the badge. Merged PRs report when the work landed instead.
 const activityAt = computed(() => prActivityAt(props.data))
+const timeAgo = useTimeAgo(() => new Date(activityAt.value))
 const activityLabel = computed(() => props.data.activityVerb ?? (props.data.merged_at ? 'merged' : props.data.state === 'draft' ? 'drafted' : 'opened'))
 const activityTitle = computed(() =>
   `${activityLabel.value} ${new Date(activityAt.value).toISOString().slice(0, 10)}`
@@ -27,18 +28,22 @@ const stateIcons: Record<PullRequest['state'], string> = {
   closed: 'i-lucide-git-pull-request-closed',
 }
 
-// Issues and RFCs never merge, so they take GitHub's issue glyphs instead of PR ones.
-const isIssue = computed(() => props.data.label === 'Issue' || props.data.label === 'RFC')
+// Issues and RFCs never merge, so they take GitHub's issue glyphs instead of PR
+// ones. A closed issue may be fixed or declined, so it gets a neutral mark, not
+// a check (done) or red (failed).
+const isIssue = computed(() => props.data.kind === 'issue' || props.data.kind === 'rfc')
 const icon = computed(() => isIssue.value
-  ? (props.data.state === 'closed' ? 'i-lucide-circle-check' : 'i-lucide-circle-dot')
+  ? (props.data.state === 'closed' ? 'i-lucide-circle-slash' : 'i-lucide-circle-dot')
   : stateIcons[props.data.state])
+const kindLabel = computed(() => props.data.kind && KIND_LABEL[props.data.kind])
 
-const stateLabels: Record<PullRequest['state'], string> = {
+const prStateLabels: Record<PullRequest['state'], string> = {
   open: 'in-flight',
   draft: 'queued',
   merged: 'completed',
   closed: 'closed',
 }
+const stateLabel = computed(() => isIssue.value ? props.data.state : prStateLabels[props.data.state])
 </script>
 
 <template>
@@ -70,17 +75,17 @@ const stateLabels: Record<PullRequest['state'], string> = {
         >
           <UIcon
             :name="icon"
-            :title="stateLabels[data.state]"
+            :title="stateLabel"
             :class="{
               'text-amber-600 dark:text-amber-400': data.state === 'open',
-              'text-neutral-500 dark:text-neutral-400': data.state === 'draft',
+              'text-neutral-500 dark:text-neutral-400': data.state === 'draft' || (isIssue && data.state === 'closed'),
               'text-nvidia dark:text-nvidia-bright': data.state === 'merged',
-              'text-red-500 dark:text-red-400': data.state === 'closed',
+              'text-red-500 dark:text-red-400': !isIssue && data.state === 'closed',
             }"
             class="size-4 sm:size-5 shrink-0"
           />
 
-          <span><span v-if="data.label" class="kind-label">{{ data.label }}</span>{{ data.title }}</span>
+          <span><span v-if="kindLabel" class="kind-label">{{ kindLabel }}</span>{{ data.title }}</span>
         </a>
 
         <div class="flex gap-2 items-bottom font-mono">
@@ -117,7 +122,12 @@ const stateLabels: Record<PullRequest['state'], string> = {
           #{{ data.number }}
         </a>
 
-        <time :datetime="activityAt" :title="activityTitle" class="text-xs text-neutral-500 dark:text-neutral-400">{{ useTimeAgo(new Date(activityAt)) }}</time>
+        <!-- The HTML is prebuilt, so a relative time rendered then ("12 hours ago")
+             is already wrong when the page opens and breaks hydration. The build
+             writes the date; the browser swaps in the relative time. -->
+        <time :datetime="activityAt" :title="activityTitle" class="text-xs text-neutral-500 dark:text-neutral-400">
+          <ClientOnly :fallback="activityAt.slice(0, 10)">{{ timeAgo }}</ClientOnly>
+        </time>
       </div>
     </div>
   </article>

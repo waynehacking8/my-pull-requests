@@ -2,7 +2,7 @@
 const { data } = await useReviews()
 if (!data.value) throw createError('Could not load review activity')
 
-const KIND_LABEL: Record<ReviewThread['kind'], string> = { pr: 'PR', issue: 'Issue', rfc: 'RFC' }
+const { revalidate } = useLiveRecords()
 
 const user = computed(() => data.value!.user)
 const threads = computed(() => data.value!.threads)
@@ -16,7 +16,7 @@ const items = computed<WallItem[]>(() => threads.value.map(t => ({
   merged_at: null,
   state: t.state,
   number: t.number,
-  label: KIND_LABEL[t.kind],
+  kind: t.kind,
   activityVerb: 'commented',
 })))
 
@@ -63,6 +63,7 @@ useSeoMeta({
         <span class="opacity-40" aria-hidden="true">·</span>
         <span>{{ stats.projects }} projects</span>
       </div>
+      <FreshnessButton :generated-at="data!.generatedAt" @refresh="revalidate" />
     </WallHero>
 
     <main class="mt-6 sm:mt-8">

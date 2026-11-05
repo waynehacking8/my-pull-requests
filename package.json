@@ -7,7 +7,7 @@
     "build": "nuxi build",
     "postinstall": "nuxi prepare",
     "lint": "eslint .",
-    "typecheck": "vue-tsc --noEmit",
+    "typecheck": "nuxi typecheck",
     "test": "node --test \"tests/*.test.ts\""
   },
   "dependencies": {

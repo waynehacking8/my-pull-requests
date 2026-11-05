@@ -1,8 +1,14 @@
 <script setup>
+// Site-wide so every page, not only the one a visitor lands on first, has them.
 useHead({
   htmlAttrs: {
     lang: 'en',
   },
+  link: [
+    { rel: 'icon', href: '/favicon.png' },
+    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    { rel: 'alternate', type: 'application/rss+xml', title: 'Wayne Chiu: recent pull requests', href: '/feed.xml' },
+  ],
 })
 </script>
 

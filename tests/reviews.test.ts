@@ -59,3 +59,12 @@ test('labels PRs, issues and RFCs and maps GitHub states', () => {
     ['draft', 'pr', 'draft'],
   ])
 })
+
+test('matches excluded repos and orgs regardless of case', () => {
+  const rows = buildThreads([
+    entry({ thread: thread({ url: 'a', repository: { nameWithOwner: 'Org/Skip', isPrivate: false } }) }),
+    entry({ thread: thread({ url: 'b', repository: { nameWithOwner: 'IGNORED/x', isPrivate: false } }) }),
+    entry({ thread: thread({ url: 'kept' }) }),
+  ], { ...filters, excludeRepos: new Set(['ORG/skip']), excludeOrgs: new Set(['Ignored']) })
+  assert.deepEqual(rows.map(r => r.url), ['kept'])
+})

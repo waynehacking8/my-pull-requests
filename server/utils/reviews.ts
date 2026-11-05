@@ -44,15 +44,19 @@ function stateOf(thread: RawThread): ReviewThread['state'] {
 export function buildThreads(entries: RawEntry[], filters: ThreadFilters): ReviewThread[] {
   // Oldest first, so each later entry becomes the thread's latest.
   const ordered = [...entries].sort((a, b) => a.at.localeCompare(b.at))
+  // GitHub names are case-insensitive, and so is the PR wall's search filter.
+  const excludeRepos = new Set([...filters.excludeRepos].map(name => name.toLowerCase()))
+  const excludeOrgs = new Set([...filters.excludeOrgs].map(name => name.toLowerCase()))
   const threads = new Map<string, ReviewThread>()
   for (const entry of ordered) {
     const { thread } = entry
     const repo = thread.repository.nameWithOwner
-    if (thread.author?.login === filters.username) continue
+    const owner = repo.split('/')[0]!.toLowerCase()
+    if (thread.author?.login.toLowerCase() === filters.username.toLowerCase()) continue
     // Threads in my own repos and forks are housekeeping, not reviewing someone else's project.
-    if (repo.split('/')[0]!.toLowerCase() === filters.username.toLowerCase()) continue
+    if (owner === filters.username.toLowerCase()) continue
     if (filters.hidePrivateRepos && thread.repository.isPrivate) continue
-    if (filters.excludeRepos.has(repo) || filters.excludeOrgs.has(repo.split('/')[0]!)) continue
+    if (excludeRepos.has(repo.toLowerCase()) || excludeOrgs.has(owner)) continue
 
     const current = threads.get(thread.url) ?? {
       repo,

@@ -3,20 +3,15 @@
 const SEARCH_PAGE_SIZE = 100
 const SEARCH_RESULT_LIMIT = 1000
 
-// `Number(process.env.X ?? fallback)` only reaches the fallback when the var is
-// absent. A var that is present but blank — which is what .env.example hands you
-// — parses to 0, and PR_COUNT=0 renders an empty wall with no error anywhere.
-function positiveIntFromEnv(value: string | undefined, fallback: number): number {
-  const parsed = Number(value?.trim())
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
-}
-
-export default defineEventHandler(async () => {
+// The build prerenders this payload from several places (/, /reviews' tab
+// counts, the .json copy, the feed). One shared cache key makes that one set of
+// GitHub calls per build instead of one per caller.
+export default defineCachedEventHandler(async () => {
   const octokit = useOctokit()
   const user = await fetchUser()
   const hidePrivateRepos = process.env.HIDE_PRIVATE_REPOS === 'true'
-  const excludeRepos = process.env.EXCLUDE_REPOS?.split(',').map(repo => repo.trim()).filter(Boolean) ?? []
-  const excludeOrgs = process.env.EXCLUDE_ORGS?.split(',').map(org => org.trim()).filter(Boolean) ?? []
+  const excludeRepos = listFromEnv(process.env.EXCLUDE_REPOS)
+  const excludeOrgs = listFromEnv(process.env.EXCLUDE_ORGS)
   const prCount = positiveIntFromEnv(process.env.PR_COUNT, 50)
 
   // Fetch pull requests from user
@@ -37,7 +32,7 @@ export default defineEventHandler(async () => {
   // remainder. per_page stays constant so page boundaries don't shift underneath
   // the loop; the overshoot is trimmed afterwards.
   const items = []
-  const seen = new Set<number>()
+  const seen = new Set<number | bigint>()
   for (let page = 1; items.length < wanted; page++) {
     const { data } = await octokit.request('GET /search/issues', {
       q,
@@ -97,4 +92,4 @@ export default defineEventHandler(async () => {
     prs,
     generatedAt: new Date().toISOString(),
   } as Contributions
-})
+}, { name: 'contributions', getKey: () => 'payload', maxAge: 300, swr: false })

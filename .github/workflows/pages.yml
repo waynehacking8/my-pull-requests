@@ -36,6 +36,11 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v6
       - run: pnpm install --frozen-lockfile
+      # Code changes are checked before they publish; the 10-minute data refresh
+      # runs the same commit, so it skips the checks.
+      - name: Lint, typecheck, test
+        if: github.event_name != 'schedule'
+        run: pnpm lint && pnpm typecheck && pnpm test
       - name: Generate the static site
         run: pnpm exec nuxi generate
         env:

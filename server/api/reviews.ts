@@ -16,11 +16,14 @@ type ReviewsPage = {
   user: {
     contributionsCollection: {
       pullRequestReviewContributions: {
+        pageInfo: { hasNextPage: boolean, endCursor: string | null }
         nodes: { occurredAt: string, pullRequestReview: { url: string }, pullRequest: RawThread }[]
       }
     }
   }
 }
+
+type YearsPage = { user: { contributionsCollection: { contributionYears: number[] } } }
 
 const THREAD = `title number url author { login } repository { nameWithOwner isPrivate }`
 
@@ -33,10 +36,15 @@ const COMMENTS_QUERY = `query($login: String!, $before: String) {
   }
 }`
 
-const REVIEWS_QUERY = `query($login: String!) {
+// A contributions collection spans at most one year, so formal reviews are
+// read year by year, every page of each.
+const YEARS_QUERY = `query($login: String!) { user(login: $login) { contributionsCollection { contributionYears } } }`
+
+const REVIEWS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $after: String) {
   user(login: $login) {
-    contributionsCollection {
-      pullRequestReviewContributions(last: 100) {
+    contributionsCollection(from: $from, to: $to) {
+      pullRequestReviewContributions(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
         nodes { occurredAt pullRequestReview { url } pullRequest { ${THREAD} state isDraft } }
       }
     }
@@ -47,11 +55,9 @@ const REVIEWS_QUERY = `query($login: String!) {
 // spend an unbounded share of the token's hourly GraphQL budget.
 const MAX_COMMENT_PAGES = 10
 
-function listFromEnv(value: string | undefined): string[] {
-  return value?.split(',').map(item => item.trim()).filter(Boolean) ?? []
-}
-
-export default defineEventHandler(async () => {
+// Prerendered from /reviews, the tab counts on /, and the .json copy: one shared
+// cache key keeps that to one set of GitHub calls per build.
+export default defineCachedEventHandler(async () => {
   const octokit = useOctokit()
   const user = await fetchUser()
   const entries: RawEntry[] = []
@@ -69,9 +75,19 @@ export default defineEventHandler(async () => {
     before = pageInfo.startCursor
   }
 
-  const reviewData: ReviewsPage = await octokit.graphql(REVIEWS_QUERY, { login: user.username })
-  for (const node of reviewData.user.contributionsCollection.pullRequestReviewContributions.nodes) {
-    entries.push({ at: node.occurredAt, url: node.pullRequestReview.url, review: true, isPullRequest: true, thread: node.pullRequest })
+  const years: YearsPage = await octokit.graphql(YEARS_QUERY, { login: user.username })
+  for (const year of years.user.contributionsCollection.contributionYears) {
+    let after: string | null = null
+    do {
+      const data: ReviewsPage = await octokit.graphql(REVIEWS_QUERY, {
+        login: user.username, from: `${year}-01-01T00:00:00Z`, to: `${year}-12-31T23:59:59Z`, after,
+      })
+      const { nodes, pageInfo } = data.user.contributionsCollection.pullRequestReviewContributions
+      for (const node of nodes) {
+        entries.push({ at: node.occurredAt, url: node.pullRequestReview.url, review: true, isPullRequest: true, thread: node.pullRequest })
+      }
+      after = pageInfo.hasNextPage ? pageInfo.endCursor : null
+    } while (after)
   }
 
   return {
@@ -84,4 +100,4 @@ export default defineEventHandler(async () => {
     }),
     generatedAt: new Date().toISOString(),
   } satisfies Reviews
-})
+}, { name: 'reviews', getKey: () => 'payload', maxAge: 300, swr: false })

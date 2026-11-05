@@ -23,7 +23,8 @@ export type PullRequest = {
 export type WallItem = Omit<PullRequest, 'stars' | 'type'> & {
   stars?: number
   type?: PullRequest['type']
-  label?: string
+  // Set on review threads; picks the chip text and issue versus PR glyphs.
+  kind?: ReviewThread['kind']
   threadUrl?: string
   activityVerb?: string
 }
