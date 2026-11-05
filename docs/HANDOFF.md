@@ -26,8 +26,9 @@ On Windows, serve `.output/public` with `python -m http.server -d <path>` starte
 ## Supply chain
 
 - Actions pinned to commit SHAs; checkout has `persist-credentials: false`. `.github/dependabot.yml` covers github-actions and npm (pnpm) weekly with a 7-day cooldown.
-- This repo is a fork (atinux/my-pull-requests): GitHub does not run Dependabot version updates on forks until it is switched on in Settings → Advanced Security → "Dependabot version updates". Alerts and security fixes are on.
-- `pnpm.overrides` force esbuild >= 0.28.1 and glob >= 14.0.2. Accepted and left open: minimatch (dev only, ESLint plugin chain; forcing 11 breaks eslint-plugin-import-x's `makeRe` import) and deepmerge (no patched release). Neither ships in the static output.
+- This repo is a fork (atinux/my-pull-requests), so Dependabot version updates had to be switched on by hand in Settings → Advanced Security (done 2026-11-05). Alerts and security fixes are on.
+- The cooldown hides releases younger than 7 days from Dependabot's resolver, so if package.json already requires one (vue-tsc ^3.3.14, released 2026-10-29), the npm update job fails with ERR_PNPM_NO_MATCHING_VERSION until that release is a week old. It clears on its own; do not remove the cooldown for it.
+- `pnpm.overrides` force esbuild >= 0.28.1 and glob >= 14.0.2. Accepted and dismissed as tolerable risk (alerts #2, #4): minimatch (dev only, ESLint plugin chain; forcing 11 breaks eslint-plugin-import-x's `makeRe` import) and deepmerge (no patched release). Neither ships in the static output.
 - GitHub runs the `*/10` cron far less often than asked (a few times a day); the "stale" dot is expected between runs.
 
 ## Open
