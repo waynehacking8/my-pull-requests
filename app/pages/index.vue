@@ -11,14 +11,14 @@ const user = computed(() => contributions.value!.user)
 const prs = computed(() => contributions.value!.prs)
 const userUrl = computed(() => `https://github.com/${user.value.username}`)
 
-// The payload is ISR-cached, so freshness has to be measured from the server
+// The page is a static build, so freshness has to be measured from the build
 // timestamp instead of asserted with a permanently "live" indicator.
 const generatedAt = computed(() => new Date(contributions.value!.generatedAt))
 const updatedAgo = useTimeAgo(generatedAt)
 const now = useTimestamp({ interval: 10_000 })
-// Freshness has to be judged against what actually refreshes the cache: the
-// warm-cache workflow, on a 10-minute cron. The old 2-minute window reported
-// stale almost permanently even when everything was working.
+// Freshness has to be judged against what actually rebuilds the site: the
+// Pages workflow, on a 10-minute cron. A 2-minute window would report stale
+// almost permanently even when everything was working.
 const isFresh = computed(() => now.value - generatedAt.value.getTime() < 15 * 60_000)
 
 let revalidating = false
@@ -51,7 +51,7 @@ if (import.meta.client) {
     if (state === 'visible' && previous === 'hidden') revalidate()
   })
 
-  // Poll on the same cadence as the ISR window, but only while the tab is open.
+  // Poll for a newer build, but only while the tab is open.
   useIntervalFn(() => {
     if (visibility.value === 'visible') revalidate()
   }, 60_000)
@@ -248,7 +248,7 @@ const filteredPrs = computed(() => {
         </template>
       </div>
 
-      <!-- Client-only: the HTML is ISR-cached, so a server-rendered age would hydrate stale. -->
+      <!-- Client-only: the HTML is prebuilt, so a server-rendered age would hydrate stale. -->
       <ClientOnly>
         <button
           type="button"

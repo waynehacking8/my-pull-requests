@@ -6,8 +6,6 @@ Create a website with an RSS feed of your recent GitHub pull requests across the
 
 Demo: https://prs.atinux.com
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fatinux%2Fmy-pull-requests&env=NUXT_GITHUB_TOKEN&envDescription=Create%20a%20GitHub%20token%20with%20no%20special%20scope.&envLink=https%3A%2F%2Fgithub.com%2Fsettings%2Fpersonal-access-tokens%2Fnew&project-name=my-pull-requests&demo-title=My%20Pull%20Requests&demo-description=Create%20a%20website%20with%20an%20RSS%20feed%20of%20your%20recent%20GitHub%20pull%20requests%20across%20the%20Open%20Source%20projects%20you%20contribute%20to.&demo-url=https%3A%2F%2Fprs.atinux.com&demo-image=https%3A%2F%2Fprs.atinux.com%2Fog.png)
-
 ## Features
 
 - List the 50 most recent pull requests you've contributed to.
@@ -64,10 +62,15 @@ pnpm dev
 
 ## Production
 
-Build the application for production:
+This fork is a static site on GitHub Pages. `.github/workflows/pages.yml` runs
+`nuxi generate` on every push to `main` and every 10 minutes, with the workflow's
+own `GITHUB_TOKEN`, so no token secret is needed. To set it up, choose
+**GitHub Actions** as the Pages source in the repository settings.
+
+Build the static site locally:
 
 ```bash
-pnpm build
+pnpm exec nuxi generate
 ```
 
 ## Credits

@@ -8,5 +8,3 @@ dist
 .data
 .DS_Store
 .vercel
-.dev.vars
-.wrangler
