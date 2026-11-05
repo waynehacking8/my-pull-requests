@@ -41,11 +41,12 @@ jobs:
       - id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - run: pnpm install --frozen-lockfile
-      # Code changes are checked before they publish; the 10-minute data refresh
-      # runs the same commit, so it skips the checks.
+      # Code changes are checked before they publish; the data refreshes (cron
+      # and the Cloudflare dispatcher in tools/dispatcher) run the same commit,
+      # so they skip the checks.
       - name: Lint, typecheck, test
-        if: github.event_name != 'schedule'
-        run: pnpm lint && pnpm typecheck && pnpm test
+        if: github.event_name == 'push'
+        run: pnpm lint && pnpm typecheck && pnpm test && node --test tools/dispatcher/test.mjs
       - name: Generate the static site
         run: pnpm exec nuxi generate
         env:
