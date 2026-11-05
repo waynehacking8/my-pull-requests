@@ -35,7 +35,8 @@ export default defineEventHandler(async (event) => {
       date: new Date(prActivityAt(pr)),
       title: pr.title,
       image: `https://github.com/${pr.repo.split('/')[0]}.png`,
-      description: `<a href="${pr.url}">${pr.title}</a>`,
+      // Maintainers can edit a PR title, so it goes in as text, not markup.
+      description: `<a href="${escapeHtml(pr.url)}">${escapeHtml(pr.title)}</a>`,
     })
   }
 

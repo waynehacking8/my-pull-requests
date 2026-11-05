@@ -10,10 +10,12 @@ on:
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
+# The build job runs pnpm install, so it gets read access only. Publishing
+# rights (pages, the OIDC token) belong to the deploy job, which runs no
+# third-party package code.
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pages: read # configure-pages reads the site's base URL
 
 # Overlapping runs would only race to publish the same content.
 concurrency:
@@ -55,6 +57,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
