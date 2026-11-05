@@ -25,9 +25,9 @@ On Windows, serve `.output/public` with `python -m http.server -d <path>` starte
 
 ## Supply chain
 
-- Actions pinned to commit SHAs; checkout has `persist-credentials: false`. `.github/dependabot.yml` covers github-actions (7-day cooldown) and npm (pnpm) weekly.
+- Actions pinned to commit SHAs; checkout has `persist-credentials: false`. `.github/dependabot.yml` covers github-actions (7-day cooldown) and npm (pnpm, 3-day cooldown) weekly.
 - This repo is a fork (atinux/my-pull-requests), so Dependabot version updates had to be switched on by hand in Settings → Advanced Security (done 2026-11-05). Alerts and security fixes are on.
-- npm has no Dependabot cooldown on purpose: Dependabot hands it to pnpm as `minimum-release-age`, which also rejects packages the lockfile already pins if they are under a week old, so every npm update job failed (ERR_PNPM_NO_MATCHING_VERSION) for up to 7 days after any fresh install. Actions keep the 7-day cooldown.
+- npm Dependabot cooldown is 3 days (GitHub's default, written out). Dependabot passes it to pnpm as `minimum-release-age`, which also rejects versions the lockfile already pins while they are younger than the window, so an npm update job fails with ERR_PNPM_NO_MATCHING_VERSION if the lockfile was refreshed with a fresh release in the last 3 days. 7 days broke every weekly job. It clears on its own.
 - `pnpm.overrides` force esbuild >= 0.28.1 and glob >= 14.0.2. Accepted and dismissed as tolerable risk (alerts #2, #4): minimatch (build time only: ESLint plugin chain and nuxt > nitropack > archiver > readdir-glob; forcing 11 breaks eslint-plugin-import-x's `makeRe` import) and deepmerge (no patched release). Neither ships in the static output.
 - GitHub runs the `*/10` cron far less often than asked (a few times a day); the "stale" dot is expected between runs.
 

@@ -1,9 +1,10 @@
 # Weekly update PRs for the SHA-pinned actions and the pnpm lockfile.
 # Actions get a 7-day cooldown, so a compromised release has time to be caught
-# upstream before it lands here. npm gets none: Dependabot passes the cooldown
-# to pnpm as minimum-release-age, which also rejects packages the lockfile
-# already pins if they are under a week old, so every update job failed with
-# ERR_PNPM_NO_MATCHING_VERSION after any fresh install (2026-11-05).
+# upstream before it lands here. npm stays at GitHub's 3-day default, set
+# explicitly: Dependabot hands the cooldown to pnpm as minimum-release-age,
+# which also rejects versions the lockfile already pins while they are younger
+# than the window. With 7 days every weekly job failed (2026-11-05); with 3 a
+# job fails only if a lockfile refresh in the last 3 days pulled a fresh release.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -19,6 +20,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
       minor-and-patch:
         update-types: [minor, patch]
