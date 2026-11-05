@@ -3,10 +3,8 @@
 const SEARCH_PAGE_SIZE = 100
 const SEARCH_RESULT_LIMIT = 1000
 
-// The build prerenders this payload from several places (/, /reviews' tab
-// counts, the .json copy, the feed). One shared cache key makes that one set of
-// GitHub calls per build instead of one per caller.
-export default defineCachedEventHandler(async () => {
+// Shared by every route that prerenders this payload (see server/utils/memo.ts).
+const load = memoFor(async (): Promise<Contributions> => {
   const octokit = useOctokit()
   const user = await fetchUser()
   const hidePrivateRepos = process.env.HIDE_PRIVATE_REPOS === 'true'
@@ -92,4 +90,6 @@ export default defineCachedEventHandler(async () => {
     prs,
     generatedAt: new Date().toISOString(),
   } as Contributions
-}, { name: 'contributions', getKey: () => 'payload', maxAge: 300, swr: false })
+}, 5 * 60_000)
+
+export default defineEventHandler(() => load())

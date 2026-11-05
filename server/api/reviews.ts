@@ -55,9 +55,8 @@ const REVIEWS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, 
 // spend an unbounded share of the token's hourly GraphQL budget.
 const MAX_COMMENT_PAGES = 10
 
-// Prerendered from /reviews, the tab counts on /, and the .json copy: one shared
-// cache key keeps that to one set of GitHub calls per build.
-export default defineCachedEventHandler(async () => {
+// Shared by every route that prerenders this payload (see server/utils/memo.ts).
+const load = memoFor(async (): Promise<Reviews> => {
   const octokit = useOctokit()
   const user = await fetchUser()
   const entries: RawEntry[] = []
@@ -100,4 +99,6 @@ export default defineCachedEventHandler(async () => {
     }),
     generatedAt: new Date().toISOString(),
   } satisfies Reviews
-}, { name: 'reviews', getKey: () => 'payload', maxAge: 300, swr: false })
+}, 5 * 60_000)
+
+export default defineEventHandler(() => load())
