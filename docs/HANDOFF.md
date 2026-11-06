@@ -3,7 +3,7 @@
 ## State (2026-11-05)
 
 - Static Nuxt 4 site on GitHub Pages, custom domain prs.wayne.is-a.dev (is-a.dev record points at waynehacking8.github.io; HTTPS enforced).
-- `.github/workflows/pages.yml` rebuilds every 10 minutes and on push. Pushes also run `pnpm lint && pnpm typecheck && pnpm test`; the cron run skips them. Build job has `contents: read, pages: read`; only the deploy job holds `pages: write` and `id-token: write`.
+- `.github/workflows/pages.yml` rebuilds on push and every 10 minutes, started by the Cloudflare dispatcher (`tools/dispatcher`, workflow_dispatch); GitHub's cron is the fallback. Pushes also run `pnpm lint && pnpm typecheck && pnpm test`; dispatch and cron runs skip them. Build job has `contents: read, pages: read`; only the deploy job holds `pages: write` and `id-token: write`.
 - Two pages: `/` (my PRs, `server/api/contributions.ts`) and `/reviews` (others' PRs, issues and RFCs I commented on or reviewed, `server/api/reviews.ts`, folding logic in `server/utils/reviews.ts`). Both payloads go through `memoFor` (`server/utils/memo.ts`, in memory, 5 minutes), so one build calls GitHub once per payload. Do not switch to `defineCachedEventHandler`: Nitro persists that cache in `node_modules/.cache`, and the next local build then republishes old data and ignores env changes.
 - `useLiveRecords()` polls `/api/contributions.json` and `/api/reviews.json` on both pages and only moves data forward.
 - Excluded from both walls: `is-a-dev/register`, this repo, `chihmingyang/cs2680` (EXCLUDE_REPOS in the workflow). Matching is case-insensitive.

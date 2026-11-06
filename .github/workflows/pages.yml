@@ -2,7 +2,9 @@ name: Build and deploy to GitHub Pages
 
 # Based on GitHub's Nuxt starter workflow (actions/starter-workflows pages/nuxtjs.yml).
 # The site is static: every run fetches the PR list and regenerates the pages.
-# The 10-minute cron is what keeps the wall fresh (the page shows "stale" after 15 minutes).
+# The Cloudflare dispatcher (tools/dispatcher) starts this every 10 minutes via
+# workflow_dispatch; GitHub's own cron below only fires a few times a day and is
+# the fallback (the page shows "stale" after 15 minutes).
 on:
   push:
     branches: [main]
