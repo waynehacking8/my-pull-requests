@@ -22,6 +22,18 @@ it does the Worker logs HTTP 401 and the sites fall back to GitHub's slow cron.
 Renew it at github.com/settings/personal-access-tokens and run `secret put`
 again.
 
+## Live (2026-11-06)
+
+- Cloudflare account: Waynehacking8@gmail.com's Account (sign in with Google;
+  GitHub sign-in is refused because the account was created with Google).
+  Wrangler's OAuth grant covers only that account.
+- Worker `wayne-sites-dispatcher`, no route, crons `*/10 * * * *` and `17 * * * *`.
+- Token `wayne-sites-dispatcher` (fine-grained), expires **2027-11-06**.
+  GitHub's settings page needs sudo mode; the email code works.
+- Check it works: dispatched runs show up as event `workflow_dispatch` in
+  `gh run list -R waynehacking8/my-pull-requests --workflow pages.yml`.
+  Logs: `npx wrangler@4 tail` here, or Workers → wayne-sites-dispatcher → Logs.
+
 ## Test
 
 `node --test tools/dispatcher/test.mjs` from the repo root.

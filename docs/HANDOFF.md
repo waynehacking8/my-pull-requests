@@ -29,7 +29,7 @@ On Windows, serve `.output/public` with `python -m http.server -d <path>` starte
 - This repo is a fork (atinux/my-pull-requests), so Dependabot version updates had to be switched on by hand in Settings → Advanced Security (done 2026-11-05). Alerts and security fixes are on.
 - npm Dependabot cooldown is 3 days (GitHub's default, written out). Dependabot passes it to pnpm as `minimum-release-age`, which also rejects versions the lockfile already pins while they are younger than the window, so an npm update job fails with ERR_PNPM_NO_MATCHING_VERSION if the lockfile was refreshed with a fresh release in the last 3 days. 7 days broke every weekly job. It clears on its own.
 - `pnpm.overrides` force esbuild >= 0.28.1 and glob >= 14.0.2. Accepted and dismissed as tolerable risk (alerts #2, #4): minimatch (build time only: ESLint plugin chain and nuxt > nitropack > archiver > readdir-glob; forcing 11 breaks eslint-plugin-import-x's `makeRe` import) and deepmerge (no patched release). Neither ships in the static output.
-- GitHub runs the `*/10` cron far less often than asked (a few times a day); the "stale" dot is expected between runs.
+- GitHub runs the `*/10` cron far less often than asked (a few times a day). The Cloudflare Worker in `tools/dispatcher` (live since 2026-11-06) starts `pages.yml` every 10 minutes and the portfolio's `deploy.yml` hourly through workflow_dispatch; GitHub's cron stays as the fallback. Its token expires 2027-11-06: renew before then (steps in `tools/dispatcher/README.md`), or both sites quietly drop back to GitHub's slow cron.
 
 ## Open
 
