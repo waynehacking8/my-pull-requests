@@ -28,6 +28,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      generated-at: ${{ steps.stamp.outputs.generated-at }}
     steps:
       # Actions are pinned to commit SHAs (a tag can be moved to other code);
       # Dependabot proposes the updates. Nothing here pushes, so the checkout
@@ -65,6 +67,11 @@ jobs:
           # '/my-pull-requests' and the github.io URL before that.
           NUXT_APP_BASE_URL: ${{ steps.pages.outputs.base_path }}/
           NUXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.base_url }}
+      # Unique per build; the deploy job checks the live site serves it.
+      - id: stamp
+        run: |
+          stamp=$(jq -er .generatedAt .output/public/api/contributions.json)
+          echo "generated-at=$stamp" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: .output/public
@@ -81,3 +88,19 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      # deploy-pages tracks a deployment by commit SHA, and the refreshes redeploy
+      # the same commit, so "success" can belong to an older deploy while Pages
+      # keeps serving an old build (actions/deploy-pages#383; 8 hours stale on
+      # 2026-11-10). Fail loudly instead.
+      - name: Check the live site serves this build
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}api/contributions.json
+          WANT: ${{ needs.build.outputs.generated-at }}
+        run: |
+          for i in $(seq 18); do
+            got=$(curl -fsS "$URL?run=$GITHUB_RUN_ID-$i" | jq -r .generatedAt) || got=
+            [ "$got" = "$WANT" ] && exit 0
+            sleep 10
+          done
+          echo "::error::Pages serves the build from $got, not this one ($WANT). Push any commit so the next deploy has a new SHA (docs/HANDOFF.md)."
+          exit 1
